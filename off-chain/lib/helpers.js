@@ -234,6 +234,8 @@ export function merkleRoot(children, size = 16) {
   if (n === 1) {
     return nodes[0];
   }
+  // console.log('size: ' ,n);
+  // console.log('nodes: ' ,nodes);
 
   assert(
     n >= 2 && n % 2 === 0,

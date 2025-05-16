@@ -170,12 +170,14 @@ export class Trie {
       if (keyValues.length === 0) {
         return new Trie();
       }
-
+      console.log(keyValues);
+      
       const prefix = commonPrefix(keyValues.map(kv => kv.path));
-
       // ------------------- A leaf
       if (keyValues.length === 1) {
         const [kv] = keyValues;
+        // console.log("leaf path: ", kv.path);
+        
         return Leaf.from(
           prefix,
           kv.key,
@@ -207,6 +209,7 @@ export class Trie {
           assert(kv.path[0] !== undefined, `empty path for node ${kv}`);
 
           if (kv.path[0] === digit) {
+            // console.log("Processing digit: ", digit, "- Current accumulator:", acc, "- Key-value pair:", kv);          
             acc.push({ ...kv, path: kv.path.slice(1) });
           }
 
@@ -278,15 +281,18 @@ export class Trie {
    */
   async into(target, ...args) {
     const { store, hash: previousHash, isRoot } = this;
+    console.log("into");
 
     this.__proto__ = target.prototype;
     for (let prop in this) {
+      console.log("prop: " ,prop);
       if (this.hasOwnProperty(prop)) {
         delete this[prop];
       }
     }
-
+    
     const self = Object.assign(this, await target.from(...args.concat(store)))
+    console.log("self: ", self);
 
     self.isRoot = isRoot;
 
@@ -452,6 +458,8 @@ export class Leaf extends Trie {
    */
   static async from(suffix, key, value, store) {
     key = typeof key === 'string' ? Buffer.from(key) : key;
+    // console.log('leaf key: ', key);
+
     assertInstanceOf(Buffer, { key });
 
     value = typeof value === 'string' ? Buffer.from(value) : value;
@@ -464,6 +472,8 @@ export class Leaf extends Trie {
       `The suffix ${suffix} isn't a valid extension of ${key.toString('hex')}`,
     );
 
+    console.log('leaf suffix: ', suffix);
+    
     const leaf = new Leaf(
       Leaf.computeHash(suffix, digest(value)),
       suffix,
@@ -471,6 +481,8 @@ export class Leaf extends Trie {
       value,
       store
     );
+
+    console.log('leaf hash: ', leaf.hash);
 
     return leaf.save();
   }
@@ -764,6 +776,9 @@ export class Branch extends Trie {
       size,
       store,
     );
+    console.log('branch hash: ', branch.hash);
+    console.log('branch prefix: ', branch.prefix);
+    console.log('branch: ', branch);
 
     return branch.save();
   }
