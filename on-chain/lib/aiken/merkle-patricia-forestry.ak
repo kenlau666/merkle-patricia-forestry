@@ -399,7 +399,7 @@ fn do_fork(
 
 pub type Tree {
   TreeBranch { nibble: ByteArray, nodes: List<Pair<Int, Tree>> }
-  TreeLeaf { key: ByteArray, value: ByteArray }
+  TreeLeaf { path: ByteArray, key: ByteArray, value: ByteArray }
 }
 
 pub fn compute_tree_hash(tree: Tree, prefix_nibbles: ByteArray) -> ByteArray {
@@ -418,17 +418,22 @@ pub fn compute_tree_hash(tree: Tree, prefix_nibbles: ByteArray) -> ByteArray {
       let merkle_root = build_merkle_hash(child_hashes)
       compute_branch_hash(nibble, merkle_root)
     }
-    TreeLeaf { key, value } -> {
-      let cursor = bytearray.length(prefix_nibbles)
-      let key_nibbles = nibbles(key, 0, cursor)
-      if key_nibbles == prefix_nibbles {
-        compute_leaf_hash(key, value, cursor)
+    TreeLeaf { path, key, value } ->
+      if blake2b_256(key) != path {
+        trace @"key": key
+        trace @"path": path
+        fail @"invalid tree, path is not the hash of the key"
       } else {
-        trace @"key_nibbles": key_nibbles
-        trace @"prefix_nibbles": prefix_nibbles
-        fail @"invalid tree, prefix does not match key"
+        let cursor = bytearray.length(prefix_nibbles)
+        let path_nibbles = nibbles(path, 0, cursor)
+        if path_nibbles == prefix_nibbles {
+          compute_leaf_hash(path, value, cursor)
+        } else {
+          trace @"path_nibbles": path_nibbles
+          trace @"prefix_nibbles": prefix_nibbles
+          fail @"invalid tree, prefix does not match path"
+        }
       }
-    }
   }
 }
 
@@ -503,4 +508,14 @@ fn compute_leaf_hash(key: ByteArray, value: ByteArray, cursor: Int) -> ByteArray
 
 fn compute_branch_hash(nibble: ByteArray, root: ByteArray) -> ByteArray {
   combine(nibble, root)
+}
+
+pub fn extract_key_values(tree: Tree) -> List<Pair<ByteArray, ByteArray>> {
+  when tree is {
+    TreeLeaf { key, value, .. } -> [Pair(key, value)]
+    TreeBranch { nodes, .. } ->
+      nodes
+        |> list.map(fn(pair: Pair<Int, Tree>) { pair.2nd })
+        |> list.foldr([], fn(x, xs) { list.concat(extract_key_values(x), xs) })
+  }
 }

@@ -1,49 +1,74 @@
 use aiken/builtin.{blake2b_256, index_bytearray, write_bits}
+use aiken/cbor
 use aiken/collection/list
 use aiken/fuzz.{int}
 use aiken/merkle_patricia_forestry.{
-  Tree, TreeBranch, TreeLeaf, compute_tree_hash,
+  Tree, TreeBranch, TreeLeaf, compute_tree_hash, extract_key_values,
 }
 use aiken/merkle_patricia_forestry/helpers.{combine, nibbles, suffix}
 use aiken/merkle_patricia_forestry/merkling.{null_hash}
 use aiken/primitive/bytearray
 
-test learn() {
-  let tree: Tree =
-    TreeBranch {
-      nibble: #"04",
-      nodes: [
-        Pair(
-          0,
-          TreeBranch {
-            nibble: #"07",
-            nodes: [
-              Pair(
-                6,
-                TreeLeaf {
-                  key: #"4076d8ab234597ab6a35c03c805381bbc016025b36ff1f7df9c5009e1a8b73ef",
-                  value: "🤷",
-                },
-              ),
-              Pair(
-                12,
-                TreeLeaf {
-                  key: #"407c58473af4b3e5b24e65481294b0772ed6a7dd793937c6c90179960d154a22",
-                  value: "🥝",
-                },
-              ),
-            ],
-          },
-        ),
-        Pair(
-          10,
-          TreeLeaf {
-            key: #"4a522f84bcda4bebb725d5f2b92af615b57cc1777bb0d8b2c6c18c3e3e6520cd",
-            value: "🤷",
-          },
-        ),
-      ],
-    }
+const tree: Tree =
+  TreeBranch {
+    nibble: #"",
+    nodes: [
+      Pair(
+        10,
+        TreeBranch {
+          nibble: #"",
+          nodes: [
+            Pair(
+              4,
+              TreeLeaf {
+                path: #"a4328cf4f7a8d99af2d6183e29a5ef5ddeb2a9c885e3a1938a2676b9abf89709",
+                key: #"d8799f505bade4195c2e4136b9bca9b563725eeed8799f581c979a51682aec06f704ab144bbb50aded23d63790caa174b0e33aa545ffd8799f581ce8fbeb1a29c4a9aead8b68614f1f0fead352160f6a5d9925a7a89841ffff",
+                value: #"a140a1401864",
+              },
+            ),
+            Pair(
+              8,
+              TreeLeaf {
+                path: #"a8bff8ba4c3d1226e11931acea10974faa5d4a36f6d3952af85c4a15c9ed909d",
+                key: #"d8799f505bade4195c2e4136b9bca9b563725cadd8799f581cfdeb4bf0e8c077114a4553f1e05395e9fb7114db177f02f7b65c8de4ffd8799f581cfd92839136c47054fda09f2fbbb1792386a3b143cea5fca14fb8baceffff",
+                value: #"a1581c5066154a102ee037390c5236f78db23239b49c5748d3d349f3ccf04ba14455534458192710",
+              },
+            ),
+          ],
+        },
+      ),
+      Pair(
+        15,
+        TreeLeaf {
+          path: #"f99beb2efeb35334b27c3ed37e4f5aa4ce89e57c07aa9f6c250fc2e2b59e7151",
+          key: #"d8799f503450e8e7ff044148af0b0f151f490d99d8799f581c4ba6dd244255995969d2c05e323686bcbaba83b736e729941825d79bffd8799f581cec4574aacf96128597eff93ab9bc36c6bdc13d7f16ef5b62840ffa1fffff",
+          value: #"a0",
+        },
+      ),
+    ],
+  }
 
-  compute_tree_hash(tree, #"") == #"83a5c96888616bc2be9e65b6fab3673d57a862467f89ac14294aec2f2bc73ae3"
+test test_compute_tree_hash() {
+  compute_tree_hash(tree, #"") == #"70bcce03913b9316f60c5e3d195dd19366333c64b12592e6a93a3e7fd130d86b"
+}
+
+test test_extract_key_values() {
+  extract_key_values(tree) == [
+    Pair(
+      #"d8799f505bade4195c2e4136b9bca9b563725eeed8799f581c979a51682aec06f704ab144bbb50aded23d63790caa174b0e33aa545ffd8799f581ce8fbeb1a29c4a9aead8b68614f1f0fead352160f6a5d9925a7a89841ffff",
+      #"a140a1401864",
+    ),
+    Pair(
+      #"d8799f505bade4195c2e4136b9bca9b563725cadd8799f581cfdeb4bf0e8c077114a4553f1e05395e9fb7114db177f02f7b65c8de4ffd8799f581cfd92839136c47054fda09f2fbbb1792386a3b143cea5fca14fb8baceffff",
+      #"a1581c5066154a102ee037390c5236f78db23239b49c5748d3d349f3ccf04ba14455534458192710",
+    ),
+    Pair(
+      #"d8799f503450e8e7ff044148af0b0f151f490d99d8799f581c4ba6dd244255995969d2c05e323686bcbaba83b736e729941825d79bffd8799f581cec4574aacf96128597eff93ab9bc36c6bdc13d7f16ef5b62840ffa1fffff",
+      #"a0",
+    ),
+  ]
+}
+
+test test_tree_cbor() {
+  cbor.serialise(tree) == #"d8799f40a20ad8799f40a204d87a9f5820a4328cf4f7a8d99af2d6183e29a5ef5ddeb2a9c885e3a1938a2676b9abf897095f5840d8799f505bade4195c2e4136b9bca9b563725eeed8799f581c979a51682aec06f704ab144bbb50aded23d63790caa174b0e33aa545ffd8799f581ce8fbeb1a295819c4a9aead8b68614f1f0fead352160f6a5d9925a7a89841ffffff46a140a1401864ff08d87a9f5820a8bff8ba4c3d1226e11931acea10974faa5d4a36f6d3952af85c4a15c9ed909d5f5840d8799f505bade4195c2e4136b9bca9b563725cadd8799f581cfdeb4bf0e8c077114a4553f1e05395e9fb7114db177f02f7b65c8de4ffd8799f581cfd928391365819c47054fda09f2fbbb1792386a3b143cea5fca14fb8baceffffff5828a1581c5066154a102ee037390c5236f78db23239b49c5748d3d349f3ccf04ba14455534458192710ffff0fd87a9f5820f99beb2efeb35334b27c3ed37e4f5aa4ce89e57c07aa9f6c250fc2e2b59e71515f5840d8799f503450e8e7ff044148af0b0f151f490d99d8799f581c4ba6dd244255995969d2c05e323686bcbaba83b736e729941825d79bffd8799f581cec4574aacf581996128597eff93ab9bc36c6bdc13d7f16ef5b62840ffa1fffffff41a0ffff"
 }

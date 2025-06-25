@@ -1,5 +1,4 @@
-import assert from 'node:assert';
-
+import assert from "node:assert";
 
 /** Concatenate encoded values from left to right.
  *
@@ -9,7 +8,6 @@ import assert from 'node:assert';
 export function sequence(...args) {
   return Buffer.concat(args);
 }
-
 
 /** Encode an integer-like value.
  *
@@ -23,11 +21,10 @@ export function int(val) {
     const [size, rest] = unsigned(n);
     return majorType(0, size, rest);
   } else {
-    const [size, rest] = unsigned(-n-1);
+    const [size, rest] = unsigned(-n - 1);
     return majorType(1, size, rest);
   }
 }
-
 
 /** Encode a *definite* byte buffer.
  *
@@ -40,15 +37,13 @@ export function bytes(val) {
   return majorType(2, size, rest, buffer);
 }
 
-
 /** Begin encoding an *indefinite* byte buffer.
  *
  * @return {Buffer}
  */
 export function beginBytes() {
-  return majorType(2, TOKEN_BEGIN)
+  return majorType(2, TOKEN_BEGIN);
 }
-
 
 /** Encode a UTF-8 text string.
  *
@@ -61,7 +56,6 @@ export function text(val) {
   return majorType(3, size, rest, buffer);
 }
 
-
 /** Begin encoding an *indefinite* text string.
  *
  * @return {Buffer}
@@ -69,7 +63,6 @@ export function text(val) {
 export function beginText() {
   return majorType(3, TOKEN_BEGIN);
 }
-
 
 /** Encode a uniform finite list of elements.
  *
@@ -82,7 +75,6 @@ export function list(encodeElem, xs) {
   return majorType(4, size, rest, ...xs.map(encodeElem));
 }
 
-
 /** Encode an heterogenous finite array of elements.
  *
  * @param {Array<Buffer>} xs
@@ -93,7 +85,6 @@ export function array(xs) {
   return majorType(4, size, rest, ...xs);
 }
 
-
 /** Encode the beginning of an indefinite list or array.
  *
  * @return {Buffer}
@@ -101,7 +92,6 @@ export function array(xs) {
 export function beginList() {
   return majorType(4, TOKEN_BEGIN);
 }
-
 
 /** Encode a uniform key:value definite map.
  *
@@ -113,13 +103,17 @@ export function beginList() {
 export function map(encodeKey, encodeValue, obj) {
   const keys = Object.keys(obj);
   const [size, rest] = unsigned(keys.length);
-  return majorType(5, size, rest, ...keys.reduce((xs, k) => {
-    xs.push(encodeKey(k));
-    xs.push(encodeValue(obj[k]));
-    return xs;
-  }, []));
+  return majorType(
+    5,
+    size,
+    rest,
+    ...keys.reduce((xs, k) => {
+      xs.push(encodeKey(k));
+      xs.push(encodeValue(obj[k]));
+      return xs;
+    }, [])
+  );
 }
-
 
 /** Encode the beginning of an indefinite map.
  *
@@ -128,7 +122,6 @@ export function map(encodeKey, encodeValue, obj) {
 export function beginMap() {
   return majorType(5, TOKEN_BEGIN);
 }
-
 
 /** Encode a tagged value.
  *
@@ -140,7 +133,6 @@ export function tag(t, val) {
   const [size, rest] = unsigned(t);
   return majorType(6, size, rest, val);
 }
-
 
 /** Encode the end of any indefinite stream.
  *
@@ -166,7 +158,6 @@ const TOKEN_BEGIN = 31;
  */
 const TOKEN_END = 255;
 
-
 function unsigned(val) {
   if (val < 24) {
     return [val, Buffer.alloc(0)];
@@ -184,14 +175,16 @@ function unsigned(val) {
     return [26, buf];
   } else if (val <= Number.MAX_SAFE_INTEGER) {
     const buf = Buffer.alloc(8);
-    buf.writeUInt32BE(Math.floor(val / 2**32));
-    buf.writeUInt32BE(val % 2**32, 4);
+    buf.writeUInt32BE(Math.floor(val / 2 ** 32));
+    buf.writeUInt32BE(val % 2 ** 32, 4);
     return [27, buf];
   } else {
-    throw new RangeError(`Cannot encode integer values larger than ${Number.MAX_SAFE_INTEGER}`);
+    throw new RangeError(
+      `Cannot encode integer values larger than ${Number.MAX_SAFE_INTEGER}`
+    );
   }
 }
 
 function majorType(i, val, ...args) {
-  return Buffer.concat([Buffer.from([i << 5 | val]), ...args]);
+  return Buffer.concat([Buffer.from([(i << 5) | val]), ...args]);
 }
