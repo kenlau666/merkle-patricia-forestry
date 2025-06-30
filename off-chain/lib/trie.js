@@ -669,7 +669,7 @@ export class Leaf extends Trie {
         cbor.beginList(),
         cbor.bytes(digest(this.key)),
         keyCbor,
-        cbor.bytes(this.value),
+        valueCbor,
         cbor.end()
       )
     );
